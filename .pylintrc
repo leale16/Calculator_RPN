@@ -1,0 +1,18 @@
+[MASTER]
+fail-under=9.0
+
+[MESSAGES CONTROL]
+disable=
+    C0114,  # missing-module-docstring
+    C0115,  # missing-class-docstring
+    C0116,  # missing-function-docstring
+    R0903,  # too-few-public-methods
+    W0511,  # fixme
+
+[FORMAT]
+max-line-length=100
+
+[DESIGN]
+max-args=5
+max-attributes=7
+max-public-methods=20
