@@ -4,9 +4,9 @@
 """
 
 import pytest
-from calculator_project.calculator import (
+from calculator import (
     Calculator, CalculatorError, Tokenizer, ShuntingYard, RPNEvaluator,
-    Number, Operator, LeftParen, RightParen
+    Number, Operator, LeftParen, RightParen, UnaryMinus
 )
 
 
@@ -47,11 +47,18 @@ class TestTokenizer:
         assert isinstance(tokens[0], LeftParen)
         assert isinstance(tokens[1], RightParen)
     
+    def test_unary_minus(self):
+        """Тест унарного минуса."""
+        tokenizer = Tokenizer("-5")
+        tokens = tokenizer.get_tokens()
+        assert len(tokens) == 1
+        assert isinstance(tokens[0], UnaryMinus)
+    
     def test_complex_expression(self):
         """Тест сложного выражения."""
         tokenizer = Tokenizer("3 + 4 * (2 - 1)")
         tokens = tokenizer.get_tokens()
-        assert len(tokens) == 7
+        assert len(tokens) == 7  # Унарных минусов нет, поэтому 7 токенов
         
         # Проверяем типы токенов
         assert isinstance(tokens[0], Number)  # 3
@@ -61,9 +68,8 @@ class TestTokenizer:
         assert isinstance(tokens[4], LeftParen)  # (
         assert isinstance(tokens[5], Number)  # 2
         assert isinstance(tokens[6], Operator)  # -
-        # Обратите внимание: здесь не хватает правой скобки и 1
-        # Это потому что токенизатор еще не дошел до них
-        # Продолжим в следующем тесте
+        assert isinstance(tokens[7], Number)  # 1
+        assert isinstance(tokens[8], RightParen)  # )
     
     def test_invalid_character(self):
         """Тест недопустимого символа."""
@@ -193,40 +199,208 @@ class TestCalculator:
         """Подготовка перед каждым тестом."""
         self.calc = Calculator()
     
-    def test_simple_calculation(self):
-        """Тест простых вычислений."""
-        assert self.calc.calculate("3 + 4") == 7
-        assert self.calc.calculate("10 - 3") == 7
-        assert self.calc.calculate("5 * 6") == 30
-        assert self.calc.calculate("15 / 3") == 5
-        assert self.calc.calculate("2 ^ 3") == 8
+    def test_basic_addition(self):
+        """Тест сложения."""
+        assert self.calc.calculate("2+3") == 5.0
     
-    def test_precedence(self):
-        """Тест приоритета операций."""
-        assert self.calc.calculate("3 + 4 * 2") == 11  # 3 + (4 * 2)
-        assert self.calc.calculate("10 - 6 / 3") == 8  # 10 - (6 / 3)
-        assert self.calc.calculate("2 ^ 3 * 4") == 32  # (2 ^ 3) * 4
+    def test_basic_subtraction(self):
+        """Тест вычитания."""
+        assert self.calc.calculate("10-4") == 6.0
+    
+    def test_basic_multiplication(self):
+        """Тест умножения."""
+        assert self.calc.calculate("6*7") == 42.0
+    
+    def test_basic_division(self):
+        """Тест деления."""
+        assert self.calc.calculate("15/3") == 5.0
+    
+    def test_multiple_operations(self):
+        """Тест нескольких операций."""
+        assert self.calc.calculate("2+3*4") == 14.0
     
     def test_parentheses(self):
         """Тест скобок."""
-        assert self.calc.calculate("(3 + 4) * 2") == 14
-        assert self.calc.calculate("10 / (5 - 3)") == 5
-        assert self.calc.calculate("(2 ^ 3) * (4 - 1)") == 24
+        assert self.calc.calculate("(2+3)*4") == 20.0
     
-    def test_complex_expressions(self):
-        """Тест сложных выражений."""
-        assert self.calc.calculate("3 + 4 * 2 - 6 / 3") == 3 + 4*2 - 6/3
-        assert self.calc.calculate("(3 + 4) * (2 - 6) / 3") == (3+4)*(2-6)/3
-        assert self.calc.calculate("2 ^ (3 + 1) - 10") == 2**4 - 10
+    def test_nested_parentheses(self):
+        """Тест вложенных скобок."""
+        assert self.calc.calculate("2*(3+(4-2))") == 10.0
+    
+    def test_unary_minus(self):
+        """Тест унарного минуса."""
+        assert self.calc.calculate("-5+3") == -2.0
+    
+    def test_unary_minus_with_parentheses(self):
+        """Тест унарного минуса со скобками."""
+        assert self.calc.calculate("-(3+2)") == -5.0
+    
+    def test_double_unary_minus(self):
+        """Тест двойного унарного минуса."""
+        assert self.calc.calculate("--5") == 5.0
+    
+    def test_division_by_zero(self):
+        """Тест деления на ноль."""
+        with pytest.raises(ValueError):
+            self.calc.calculate("10/0")
+    
+    def test_complex_expression(self):
+        """Тест сложного выражения."""
+        result = self.calc.calculate("18+18-2*(13+6-3/5)-64")
+        assert abs(result - (-64.8)) < 0.0001
+    
+    def test_floating_point(self):
+        """Тест чисел с плавающей точкой."""
+        assert self.calc.calculate("3.5+2.5") == 6.0
+    
+    def test_negative_numbers(self):
+        """Тест отрицательных чисел."""
+        assert self.calc.calculate("-3*4") == -12.0
+    
+    def test_expression_with_spaces(self):
+        """Тест выражения с пробелами."""
+        assert self.calc.calculate(" 2 + 3 * 4 ") == 14.0
     
     def test_empty_expression(self):
         """Тест пустого выражения."""
-        with pytest.raises(CalculatorError, match="Пустое выражение"):
+        with pytest.raises(ValueError, match="Пустое выражение"):
             self.calc.calculate("")
-        with pytest.raises(CalculatorError, match="Пустое выражение"):
-            self.calc.calculate("   ")
     
-    def test_invalid_syntax(self):
-        """Тест неверного синтаксиса."""
-        with pytest.raises(CalculatorError):
-            self.calc.calculate("3 + + 4")
+    def test_non_string_input(self):
+        """Тест нестрокового ввода."""
+        with pytest.raises(ValueError, match="Введено не строчное выражение"):
+            self.calc.calculate(123)
+    
+    def test_invalid_operator(self):
+        """Тест неверного оператора."""
+        with pytest.raises(ValueError):
+            self.calc.calculate("2^3")
+    
+    def test_missing_operand(self):
+        """Тест отсутствующего операнда."""
+        with pytest.raises(ValueError):
+            self.calc.calculate("2+")
+    
+    def test_variables(self):
+        """Тест переменных."""
+        variables = {'x': 5, 'y': 3}
+        result = self.calc.calculate("x*y+2", variables)
+        assert result == 17.0
+    
+    def test_undefined_variable(self):
+        """Тест неопределенной переменной."""
+        with pytest.raises(ValueError):
+            self.calc.calculate("x+2")
+    
+    def test_variable_with_expression(self):
+        """Тест выражения с переменными."""
+        variables = {'a': 10, 'b': 2}
+        result = self.calc.calculate("(a+b)*3", variables)
+        assert result == 36.0
+    
+    def test_unary_minus_with_multiplication(self):
+        """Тест унарного минуса с умножением."""
+        assert self.calc.calculate("-2*-3") == 6.0
+    
+    def test_complex_with_unary(self):
+        """Тест сложного выражения с унарным минусом."""
+        assert self.calc.calculate("-(-2+3)*4") == -4.0
+    
+    def test_operator_precedence(self):
+        """Тест приоритета операторов."""
+        assert self.calc.calculate("2+3*4-6/2") == 11.0
+    
+    def test_parentheses_precedence(self):
+        """Тест приоритета скобок."""
+        assert self.calc.calculate("(2+3)*(4-1)") == 15.0
+    
+    def test_division_result_type(self):
+        """Тест типа результата деления."""
+        result = self.calc.calculate("5/2")
+        assert result == 2.5
+        assert isinstance(result, float)
+    
+    def test_large_numbers(self):
+        """Тест больших чисел."""
+        assert self.calc.calculate("1000000*1000000") == 1000000000000.0
+    
+    def test_decimal_precision(self):
+        """Тест точности десятичных дробей."""
+        result = self.calc.calculate("1/3")
+        assert abs(result - 0.3333333333333333) < 0.0000000000001
+    
+    def test_multiple_parentheses(self):
+        """Тест множественных скобок."""
+        assert self.calc.calculate("(1+2)*(3+4)*(5+6)") == 231.0
+    
+    def test_chain_operations(self):
+        """Тест цепочки операций."""
+        assert self.calc.calculate("1+2+3+4+5") == 15.0
+    
+    def test_recalculate_same_instance(self):
+        """Тест переиспользования экземпляра."""
+        self.calc.calculate("2+3")
+        result = self.calc.calculate("5*6")
+        assert result == 30.0
+    
+    def test_calculate_without_expression(self):
+        """Тест вычисления без выражения."""
+        self.calc.start_calculator("2+3")
+        result = self.calc.calculate()
+        assert result == 5.0
+
+
+class TestCalculatorEdgeCases:
+    """Тесты для граничных случаев."""
+    
+    def setup_method(self):
+        """Подготовка перед каждым тестом."""
+        self.calc = Calculator()
+    
+    def test_single_number(self):
+        """Тест одного числа."""
+        assert self.calc.calculate("42") == 42.0
+    
+    def test_single_negative_number(self):
+        """Тест одного отрицательного числа."""
+        assert self.calc.calculate("-42") == -42.0
+    
+    def test_decimal_numbers(self):
+        """Тест некорректных десятичных чисел."""
+        with pytest.raises(ValueError):
+            self.calc.calculate("3.14.15")
+    
+    def test_leading_zeros(self):
+        """Тест ведущих нулей."""
+        assert self.calc.calculate("002+003") == 5.0
+    
+    def test_trailing_operator(self):
+        """Тест оператора в конце."""
+        with pytest.raises(ValueError):
+            self.calc.calculate("2+3+")
+    
+    def test_leading_operator(self):
+        """Тест оператора в начале."""
+        with pytest.raises(ValueError):
+            self.calc.calculate("+2+3")
+    
+    def test_empty_parentheses(self):
+        """Тест пустых скобок."""
+        with pytest.raises(ValueError):
+            self.calc.calculate("()")
+    
+    def test_unmatched_parentheses(self):
+        """Тест несогласованных скобок."""
+        with pytest.raises(ValueError):
+            self.calc.calculate("(2+3")
+    
+    def test_variable_with_undefined_variable(self):
+        """Тест с неопределенной переменной."""
+        with pytest.raises(ValueError):
+            self.calc.calculate("x+y", {'x': 5})
+    
+    def test_whitespace_only(self):
+        """Тест только пробелов."""
+        with pytest.raises(ValueError, match="Пустое выражение"):
+            self.calc.calculate("   ")
+            
