@@ -1,8 +1,3 @@
-"""
-Модуль тестирования калькулятора.
-Тестирует каждый этап работы: токенизацию, преобразование в ОПН и вычисление.
-"""
-
 import pytest
 from calculator import (
     Calculator, CalculatorError, Tokenizer, ShuntingYard, RPNEvaluator,
@@ -235,5 +230,4 @@ class TestCalculator:
     def test_invalid_syntax(self):
         """Тест неверного синтаксиса."""
         with pytest.raises(CalculatorError):
-            self.calc.calculate("3 + + 4")
-            
+            self.calc.calculate("3 + + 4")            

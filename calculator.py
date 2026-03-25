@@ -1,18 +1,11 @@
-"""
-Модуль калькулятора с использованием обратной польской нотации.
-Поддерживает операции: +, -, *, /, ^ и скобки.
-"""
-
 from typing import List, Union
 
 
 class CalculatorError(Exception):
     """Исключение для ошибок калькулятора."""
 
-
 class Token:
     """Базовый класс для всех токенов."""
-
 
 class Number(Token):
     """Класс для числовых токенов."""
@@ -22,7 +15,6 @@ class Number(Token):
 
     def __repr__(self):
         return f"Number({self.value})"
-
 
 class Operator(Token):
     """Класс для операторов."""
@@ -73,13 +65,11 @@ class Operator(Token):
     def __repr__(self):
         return f"Operator('{self.symbol}')"
 
-
 class LeftParen(Token):
     """Класс для левой скобки."""
 
     def __repr__(self):
         return "LeftParen()"
-
 
 class RightParen(Token):
     """Класс для правой скобки."""
@@ -87,12 +77,11 @@ class RightParen(Token):
     def __repr__(self):
         return "RightParen()"
 
-
 class Tokenizer:
     """Класс для разбора входной строки в токены."""
 
     def __init__(self, expression: str):
-        self.expression = expression.replace(' ', '')  # Удаляем пробелы
+        self.expression = expression.replace(' ', '')
         self.position = 0
 
     def get_tokens(self) -> List[Token]:
@@ -102,15 +91,15 @@ class Tokenizer:
         while self.position < len(self.expression):
             char = self.expression[self.position]
 
-            if char.isdigit() or char == '.':  # Число
+            if char.isdigit() or char == '.':
                 tokens.append(self._parse_number())
-            elif char in '+-*/^':  # Оператор
+            elif char in '+-*/^':
                 tokens.append(Operator(char))
                 self.position += 1
-            elif char == '(':  # Левая скобка
+            elif char == '(':
                 tokens.append(LeftParen())
                 self.position += 1
-            elif char == ')':  # Правая скобка
+            elif char == ')':
                 tokens.append(RightParen())
                 self.position += 1
             else:
@@ -148,10 +137,7 @@ class ShuntingYard:
 
     @staticmethod
     def to_rpn(tokens: List[Token]) -> List[Union[Number, Operator]]:
-        """
-        Преобразует список токенов в обратную польскую нотацию.
-        Использует алгоритм сортировочной станции Дейкстры.
-        """
+
         output = []
         stack = []
 
@@ -172,7 +158,7 @@ class ShuntingYard:
                 if not stack:
                     raise CalculatorError("Несоответствие скобок: не найдена открывающая скобка")
 
-                stack.pop()  # Удаляем левую скобку
+                stack.pop()
 
         # Выталкиваем оставшиеся операторы из стека
         while stack:
@@ -235,15 +221,6 @@ class Calculator:
     def calculate(self, expression: str) -> float:
         """
         Вычисляет значение математического выражения.
-
-        Args:
-            expression: Строка с выражением (например, "3 + 4 * 2")
-
-        Returns:
-            Результат вычисления
-
-        Raises:
-            CalculatorError: При ошибках в выражении
         """
         if not expression or not expression.strip():
             raise CalculatorError("Пустое выражение")
@@ -260,9 +237,7 @@ class Calculator:
 
         return result
 
-
 def main():
-    """Интерактивный режим калькулятора."""
     calculator = Calculator()
     print("Калькулятор с обратной польской нотацией")
     print("Поддерживаемые операции: +, -, *, /, ^ (степень)")
